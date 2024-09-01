@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: olive-young-shutter-deployment
+  namespace: spring-server
+  labels:
+    app: olive-young-shutter
+spec:
+  replicas: 15  # 초기 파드 수
+  selector:
+    matchLabels:
+      app: olive-young-shutter
+  template:
+    metadata:
+      labels:
+        app: olive-young-shutter
+    spec:
+      containers:
+        - name: olive-young-shutter-container
+          image: ${IMAGE_URL/IMGAE_NAME:IMAGE_TAG}
+          resources: # 리소스 요청 및 제한 설정
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "1024m"
+              memory: "1024Mi"
+          ports:
+            - containerPort: 8085
+
+---
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: olive-young-shutter-hpa
+  namespace: spring-server
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: olive-young-shutter-deployment  
+  minReplicas: 15  # 최소 파드 수
+  maxReplicas: 40 # 최대 파드 수
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 20  # CPU 80% 이상일 때 스케일 아웃

@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: olive-young-main-deployment  # Deployment 이름
+  namespace: spring-server
+  labels:
+    app: olive-young-main  # 라벨 수정
+spec:
+  replicas: 15  # 초기 파드 수
+  selector:
+    matchLabels:
+      app: olive-young-main  # Deployment와 동일한 라벨로 맞추기
+  template:
+    metadata:
+      labels:
+        app: olive-young-main  # 동일한 라벨 사용
+    spec:
+      containers:
+        - name: olive-young-main-container
+          image: ${IMAGE_URL/IMGAE_NAME:IMAGE_TAG}
+          resources: # 리소스 요청 및 제한 설정
+            requests:
+              cpu: "500m"  # 0.5 CPU를 요청
+              memory: "512Mi"  # 512Mi 메모리 요청
+            limits:
+              cpu: "1024m"  # 최대 1 CPU 사용
+              memory: "1024Mi"  # 최대 1Gi 메모리 사용
+          ports:
+            - containerPort: 8080
+
+---
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: olive-young-main-hpa
+  namespace: spring-server
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: olive-young-main-deployment  
+  minReplicas: 15  # 최소 파드 수
+  maxReplicas: 40  # 최대 파드 수
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 20  # CPU 80% 이상일 때 스케일 아웃
